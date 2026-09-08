@@ -38,21 +38,14 @@
   }
   .lead { text-align: center; color: var(--muted); margin: 0 0 28px; font-size: 14px; }
   h1 { font-size: 22px; margin: 0 0 16px; text-align: center; }
-  ol { list-style: none; padding: 0; margin: 0 0 28px; }
-  li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--surface);
-    border: 1px solid var(--outline);
-    border-radius: 18px;
-    padding: 12px 16px;
-    margin-bottom: 8px;
+  .item { font-weight: 600; }
+  .meta { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; padding: 0; list-style: none; }
+  .chips li {
+    display: inline-block; background: var(--surface);
+    border: 1px solid var(--outline); border-radius: 28px;
+    padding: 10px 16px; margin: 0; font-weight: 600; font-size: 15px;
   }
-  .rank { font-weight: 900; font-size: 20px; width: 28px; text-align: center; }
-  .r1 { color: #e0a02f; } .r2 { color: #9aa0ac; } .r3 { color: #c57f4d; }
-  .rn { color: #a9a296; }
-  .item { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   a.button, .button {
     display: block;
     text-align: center;
@@ -105,7 +98,7 @@
   if (!match) { notFound(); return; }
 
   var payload = match[1];
-  var ranking = null;
+  var deck = null;
   try {
     if (payload.length <= 2000) {
       var padded = payload.replace(/-/g, '+').replace(/_/g, '/');
@@ -115,30 +108,31 @@
       var parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
       if (parsed && parsed.v === 1 &&
           typeof parsed.t === 'string' && parsed.t.trim() &&
-          Array.isArray(parsed.i) && parsed.i.length >= 2 && parsed.i.length <= 20 &&
+          typeof parsed.n === 'number' && parsed.n >= 3 && parsed.n <= 10 &&
+          Array.isArray(parsed.i) && parsed.i.length >= parsed.n &&
+          parsed.i.length <= 60 &&
           parsed.i.every(function (x) { return typeof x === 'string' && x.trim(); })) {
-        ranking = parsed;
+        deck = parsed;
       }
     }
   } catch (e) {
-    ranking = null;
+    deck = null;
   }
 
-  if (!ranking) { notFound(); return; }
+  if (!deck) { notFound(); return; }
 
-  content.appendChild(el('h1', null, ranking.t));
+  content.appendChild(el('h1', null, deck.t));
+  content.appendChild(el('p', 'meta',
+    deck.n + '位まで ・ 候補 ' + deck.i.length));
 
-  var list = el('ol');
-  ranking.i.forEach(function (item, index) {
-    var row = el('li');
-    var rank = index + 1;
-    row.appendChild(el('span', 'rank ' + (rank <= 3 ? 'r' + rank : 'rn'), String(rank)));
-    row.appendChild(el('span', 'item', item));
-    list.appendChild(row);
+  // **順位は付けない。**答えるのは受け取った人。
+  var chips = el('ul', 'chips');
+  deck.i.forEach(function (item) {
+    chips.appendChild(el('li', 'item', item));
   });
-  content.appendChild(list);
+  content.appendChild(chips);
 
-  var open = el('a', 'button primary', 'アプリで開いて保存する');
+  var open = el('a', 'button primary', 'アプリで開いて答える');
   open.href = 'rankbomb://r/' + payload;
   content.appendChild(open);
 
@@ -148,7 +142,7 @@
   content.appendChild(pending);
 
   content.appendChild(el('p', 'note',
-    'このページは順位を表示しているだけです。何も送信しません。'));
+    'このページはお題を表示しているだけです。何も送信しません。'));
 })();
 </script>
 </body>
