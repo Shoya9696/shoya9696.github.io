@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["886UYP5XJ5.com.shoyakurokawa.rankbomb"],
+        "components": [
+          {
+            "/": "/rank-bomb/r/*",
+            "comment": "RANK BOMB で作った順位の共有リンク"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RANK BOMB</title>
+<style>
+  :root {
+    --bg: #fffcf6;
+    --surface: #ffffff;
+    --outline: #e8e1d4;
+    --text: #2e2a24;
+    --muted: #857d70;
+    --accent: #ef8a45;
+    --accent-deep: #e2712c;
+    --accent-soft: #fdeee1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 56px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+      "Noto Sans JP", sans-serif;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+  }
+  main { width: 100%; max-width: 420px; }
+  .brand {
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--accent-deep);
+    text-align: center;
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
+  .lead { text-align: center; color: var(--muted); margin: 0 0 28px; font-size: 14px; }
+  h1 { font-size: 22px; margin: 0 0 16px; text-align: center; }
+  ol { list-style: none; padding: 0; margin: 0 0 28px; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--outline);
+    border-radius: 18px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  .rank { font-weight: 900; font-size: 20px; width: 28px; text-align: center; }
+  .r1 { color: #e0a02f; } .r2 { color: #9aa0ac; } .r3 { color: #c57f4d; }
+  .rn { color: #a9a296; }
+  .item { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  a.button, .button {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 28px;
+    padding: 15px 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .primary { background: var(--accent); color: #fff; }
+  .secondary { background: var(--surface); color: var(--text); border: 1px solid var(--outline); }
+  .note { color: var(--muted); font-size: 13px; text-align: center; margin-top: 20px; }
+  .pending {
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    border-radius: 18px;
+    padding: 12px 16px;
+    font-size: 13px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">RANK BOMB</p>
+  <p class="lead">自分だけの順位を、つくろう。</p>
+  <div id="content"></div>
+</main>
+<script>
+(function () {
+  var content = document.getElementById('content');
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    // 中身は他人が作った文字列。**必ず textContent で入れる。**
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function notFound() {
+    content.appendChild(el('h1', null, 'ページが見つかりません'));
+    var link = el('a', 'button secondary', 'RANK BOMB について');
+    link.href = '/rank-bomb/';
+    content.appendChild(link);
+  }
+
+  // /rank-bomb/r/<payload>
+  var match = location.pathname.match(/^\/rank-bomb\/r\/([A-Za-z0-9_-]+)\/?$/);
+  if (!match) { notFound(); return; }
+
+  var payload = match[1];
+  var ranking = null;
+  try {
+    if (payload.length <= 2000) {
+      var padded = payload.replace(/-/g, '+').replace(/_/g, '/');
+      while (padded.length % 4) padded += '=';
+      var binary = atob(padded);
+      var bytes = Uint8Array.from(binary, function (c) { return c.charCodeAt(0); });
+      var parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      if (parsed && parsed.v === 1 &&
+          typeof parsed.t === 'string' && parsed.t.trim() &&
+          Array.isArray(parsed.i) && parsed.i.length >= 2 && parsed.i.length <= 20 &&
+          parsed.i.every(function (x) { return typeof x === 'string' && x.trim(); })) {
+        ranking = parsed;
+      }
+    }
+  } catch (e) {
+    ranking = null;
+  }
+
+  if (!ranking) { notFound(); return; }
+
+  content.appendChild(el('h1', null, ranking.t));
+
+  var list = el('ol');
+  ranking.i.forEach(function (item, index) {
+    var row = el('li');
+    var rank = index + 1;
+    row.appendChild(el('span', 'rank ' + (rank <= 3 ? 'r' + rank : 'rn'), String(rank)));
+    row.appendChild(el('span', 'item', item));
+    list.appendChild(row);
+  });
+  content.appendChild(list);
+
+  var open = el('a', 'button primary', 'アプリで開いて保存する');
+  open.href = 'rankbomb://r/' + payload;
+  content.appendChild(open);
+
+  // App Store の URL はアプリを登録してから決まる。**架空のリンクは置かない。**
+  var pending = el('div', 'pending',
+    'アプリをまだ入れていない方へ：現在 App Store で準備中です。');
+  content.appendChild(pending);
+
+  content.appendChild(el('p', 'note',
+    'このページは順位を表示しているだけです。何も送信しません。'));
+})();
+</script>
+</body>
+</html>
